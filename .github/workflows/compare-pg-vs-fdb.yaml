@@ -144,6 +144,13 @@ jobs:
           sudo systemctl restart foundationdb
           sleep 5
 
+          sudo systemctl stop foundationdb
+          sudo rm -rf /var/lib/foundationdb/data/*
+          sudo systemctl start foundationdb
+          sleep 10
+          fdbcli --exec "configure new single memory"
+          fdbcli --exec "status"
+
       - name: Copy cluster file to workspace
         run: |
           sudo cp /etc/foundationdb/fdb.cluster .

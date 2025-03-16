@@ -17,7 +17,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          postgres -c max_worker_processes=1 -c max_parallel_workers=0 -c max_parallel_workers_per_gather=0
 
     steps:
       - name: Checkout code

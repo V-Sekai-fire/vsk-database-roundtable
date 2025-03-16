@@ -1,4 +1,4 @@
-name: build
+name: cockroachdb-workloadf
 on:
   push:
 jobs:

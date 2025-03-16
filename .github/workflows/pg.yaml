@@ -1,4 +1,4 @@
-name: build
+name: postgresql-workloadf
 on:
   push:
 jobs:

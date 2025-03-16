@@ -134,10 +134,10 @@ jobs:
       run: |
         cd YCSB
         sed -i '1s/python/python2/' ./bin/ycsb
-        ./bin/ycsb load foundationdb -s -P workloads/workloadF \
+        ./bin/ycsb load foundationdb -s -P workloads/workloadf \
           -p foundationdb.clusterfile=../fdb.cluster
         
-        ./bin/ycsb run foundationdb -s -P workloads/workloadF \
+        ./bin/ycsb run foundationdb -s -P workloads/workloadf \
           -p foundationdb.clusterfile=../fdb.cluster \
           -p foundationdb.keyprefix=test
 

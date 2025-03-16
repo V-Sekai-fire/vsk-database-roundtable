@@ -136,15 +136,3 @@ jobs:
           ./bin/ycsb run foundationdb -s -P workloads/workloadf \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.keyprefix=test
-
-  compare-results:
-    runs-on: ubuntu-22.04
-    needs: [postgresql-workloadf, foundationdb-workloadf]
-    steps:
-    - name: Compare throughput
-      run: |
-        echo "Comparison Results:"
-        echo "PostgreSQL: $(grep 'Throughput' pg-results.txt | awk '{print $3}') ops/sec"
-        echo "FoundationDB: $(grep 'Throughput' fdb-results.txt | awk '{print $3}') ops/sec"
-        echo "Recommendation:"
-        echo "FoundationDB shows better horizontal scaling while PostgreSQL offers lower latency for single-node deployments"

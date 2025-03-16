@@ -143,24 +143,6 @@ jobs:
 
   cockroachdb-workloadf:
     runs-on: ubuntu-22.04
-    services:
-      cockroach:
-        image: cockroachdb/cockroach:v22.1.21
-        ports:
-          - 26257:26257
-          - 8080:8080
-        options: >-
-          --env COCKROACH_DATABASE={DATABASE_NAME} \
-          --env COCKROACH_USER={USER_NAME} \
-          --env COCKROACH_PASSWORD={PASSWORD} \
-          --name=roach-single \
-          --hostname=roach-single \
-          -p 26257:26257 \
-          -p 8080:8080 \
-          -v "roach-single:/cockroach/cockroach-data"  \
-          cockroachdb/cockroach:v25.1.21 start-single-node \
-          --http-addr=roach-single:8080
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,11 +165,25 @@ jobs:
           sed -i '1s/python/python2/' ycsb-0.17.0/bin/ycsb
           wget -P ycsb-0.17.0/lib/ https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 
-      - name: Install CockroachDB CLI
+      - name: Install and Start CockroachDB
         run: |
+          # Download and install CockroachDB
           curl https://binaries.cockroachdb.com/cockroach-v22.1.21.linux-amd64.tgz | tar -xz
           sudo cp cockroach-v22.1.21.linux-amd64/cockroach /usr/local/bin/
-          cockroach version
+          
+          # Start CockroachDB in background with automatic shutdown
+          (cockroach start-single-node --insecure --http-addr=:8080 --listen-addr=:26257 && trap "cockroach quit --insecure" EXIT) &
+          
+          # Wait for DB to be ready
+          sleep 5
+          cockroach sql --insecure --host=localhost:26257 -e "CREATE DATABASE IF NOT EXISTS ycsb;"
+          cockroach sql --insecure --host=localhost:26257 -d ycsb -e \
+            "CREATE TABLE IF NOT EXISTS usertable (
+              ycsb_key VARCHAR(255) PRIMARY KEY,
+              field0 TEXT,
+              field1 TEXT,
+              field2 TEXT
+            );"
 
       - name: Create workload configuration
         run: |
@@ -206,20 +202,10 @@ jobs:
           fieldlength=100
           EOL
 
-      - name: Create database and table
-        run: |
-          cockroach sql --insecure --host=localhost:26257 -e "CREATE DATABASE IF NOT EXISTS ycsb;"
-          cockroach sql --insecure --host=localhost:26257 -d ycsb -e \
-            "CREATE TABLE IF NOT EXISTS usertable (
-              ycsb_key VARCHAR(255) PRIMARY KEY,
-              field0 TEXT,
-              field1 TEXT,
-              field2 TEXT
-            );"
-
-      - name: Load initial data
+      - name: Load initial data and run workload
         run: |
           cd ycsb-0.17.0
+          # Load data
           ./bin/ycsb load jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
@@ -228,10 +214,8 @@ jobs:
             -p jdbc.fetchsize=10 \
             -p jdbc.autocommit=true \
             -p db.batchsize=1000
-
-      - name: Run Workload F
-        run: |
-          cd ycsb-0.17.0
+          
+          # Run workload
           ./bin/ycsb run jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \

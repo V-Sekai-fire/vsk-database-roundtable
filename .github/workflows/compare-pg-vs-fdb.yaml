@@ -118,8 +118,12 @@ jobs:
 
     - name: Build YCSB FDB binding
       run: |
+        git clone --branch 0.17.0 --depth 1 https://github.com/brianfrankcooper/YCSB.git
         cd YCSB/foundationdb
-        mvn clean package
+        mvn clean package -DskipTests
+        
+        # Verify build
+        ls -lh target/foundationdb-binding-*.jar
 
     - name: Run Workload F
       run: |

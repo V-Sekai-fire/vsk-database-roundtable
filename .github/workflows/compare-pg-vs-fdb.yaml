@@ -150,7 +150,16 @@ jobs:
           - 26257:26257
           - 8080:8080
         options: >-
-          start-single-node --insecure
+          --env COCKROACH_DATABASE={DATABASE_NAME} \
+          --env COCKROACH_USER={USER_NAME} \
+          --env COCKROACH_PASSWORD={PASSWORD} \
+          --name=roach-single \
+          --hostname=roach-single \
+          -p 26257:26257 \
+          -p 8080:8080 \
+          -v "roach-single:/cockroach/cockroach-data"  \
+          cockroachdb/cockroach:v25.1.21 start-single-node \
+          --http-addr=roach-single:8080
 
     steps:
       - name: Checkout code

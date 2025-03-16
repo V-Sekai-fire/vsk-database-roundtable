@@ -124,7 +124,13 @@ jobs:
           [general]
           restart_delay = 60
           initial_reconnect_delay = 1
-          [fdbserver]
+          [fdbserver.1]
+          process_count = $CORES
+          listen_address = public
+          memory = $MEMORY
+          storage_memory = $((MEMORY / 2))
+          metrics_cluster = 
+          [fdbserver.2]
           process_count = $CORES
           listen_address = public
           memory = $MEMORY
@@ -135,21 +141,6 @@ jobs:
           [simulation]
           enabled = false
           EOL
-
-          # Configure network options
-          sudo sysctl -w net.core.somaxconn=10000
-          sudo sysctl -w net.ipv4.tcp_max_syn_backlog=10000
-
-          # Restart FDB with new configuration
-          sudo systemctl restart foundationdb
-          sleep 5
-
-          sudo systemctl stop foundationdb
-          sudo rm -rf /var/lib/foundationdb/data/*
-          sudo systemctl start foundationdb
-          sleep 10
-          fdbcli --exec "configure new single memory"
-          fdbcli --exec "status"
 
       - name: Copy cluster file to workspace
         run: |

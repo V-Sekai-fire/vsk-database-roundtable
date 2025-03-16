@@ -1,0 +1,54 @@
+name: build
+on:
+  push:
+jobs:
+  foundationdb-workloadf:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python 2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python2
+
+      - name: Install FoundationDB server and client
+        run: |
+          sudo apt-get update
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-server_7.1.53-1_amd64.deb
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-clients_7.1.53-1_amd64.deb
+          sudo dpkg -i foundationdb-clients_7.1.53-1_amd64.deb
+          sudo dpkg -i foundationdb-server_7.1.53-1_amd64.deb
+
+      - name: Copy cluster file to workspace
+        run: |
+          sudo cp /etc/foundationdb/fdb.cluster .
+
+      - name: Build YCSB FDB binding
+        run: |
+          git clone --branch 0.17.0 --depth 1 https://github.com/brianfrankcooper/YCSB.git
+          cd YCSB/foundationdb
+          mvn clean package -DskipTests
+
+      - name: Run Workload F with optimized settings
+        run: |
+          cd YCSB
+          sed -i '1s/python/python2/' ./bin/ycsb
+          
+          # Load data with high concurrency
+          ./bin/ycsb load foundationdb -s -P workloads/workloadf \
+            -p foundationdb.clusterfile=../fdb.cluster \
+            -p foundationdb.concurrency=$(nproc) \
+            -threads $(nproc)
+          
+          # Run benchmark with maximum throughput settings
+          ./bin/ycsb run foundationdb -s -P workloads/workloadf \
+            -p foundationdb.clusterfile=../fdb.cluster \
+            -p foundationdb.keyprefix=test \
+            -p foundationdb.concurrency=$(nproc) \
+            -p foundationdb.max_retries=100 \
+            -p foundationdb.transaction_timeout=60000 \
+            -threads $(nproc)
+
+  

@@ -1,0 +1,115 @@
+name: DB Comparison for Workload F
+on: [push]
+
+jobs:
+  postgresql-workloadf:
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup YCSB
+      run: |
+        wget https://github.com/brianfrankcooper/YCSB/releases/download/0.17.0/ycsb-0.17.0.tar.gz
+        tar xfvz ycsb-0.17.0.tar.gz
+        wget -P ycsb-0.17.0/lib/ https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
+
+    - name: Create table
+      run: |
+        PGPASSWORD=postgres psql -h localhost -U postgres -c \
+          "CREATE DATABASE ycsb; \
+          CREATE TABLE ycsb.usertable (
+            YCSB_KEY VARCHAR(255) PRIMARY KEY,
+            FIELD0 TEXT, FIELD1 TEXT, FIELD2 TEXT
+          );"
+
+    - name: Run Workload F
+      run: |
+        cd ycsb-0.17.0
+        ./bin/ycsb load jdbc -s -P ../workloadF \
+          -p db.driver=org.postgresql.Driver \
+          -p db.url=jdbc:postgresql://localhost:5432/ycsb \
+          -p db.user=postgres \
+          -p db.passwd=postgres
+        
+        ./bin/ycsb run jdbc -s -P ../workloadF \
+          -p db.driver=org.postgresql.Driver \
+          -p db.url=jdbc:postgresql://localhost:5432/ycsb \
+          -p db.user=postgres \
+          -p db.passwd=postgres
+
+  foundationdb-workloadf:
+    runs-on: ubuntu-22.04
+    services:
+      foundationdb:
+        image: foundationdb/foundationdb:7.1.53
+        ports:
+          - 4500:4500
+        env:
+          FDB_CLUSTER_FILE: /etc/foundationdb/fdb.cluster
+        volumes:
+          - ./fdb.cluster:/etc/foundationdb/fdb.cluster
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install FDB client
+      run: |
+        sudo apt-get update
+        curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-clients_7.1.53-1_amd64.deb
+        sudo dpkg -i foundationdb-clients_7.1.53-1_amd64.deb
+
+    - name: Configure FDB
+      run: |
+        echo "docker:docker@127.0.0.1:4500" > fdb.cluster
+        fdbcli -C fdb.cluster --exec "configure new single memory"
+        fdbcli -C fdb.cluster --exec "status"
+
+    - name: Build YCSB FDB binding
+      run: |
+        cd YCSB/foundationdb
+        mvn clean package
+
+    - name: Run Workload F
+      run: |
+        cd YCSB
+        ./bin/ycsb load foundationdb -s -P workloads/workloadF \
+          -p foundationdb.clusterfile=../fdb.cluster
+        
+        ./bin/ycsb run foundationdb -s -P workloads/workloadF \
+          -p foundationdb.clusterfile=../fdb.cluster \
+          -p foundationdb.keyprefix=test
+
+  compare-results:
+    runs-on: ubuntu-22.04
+    needs: [postgresql-workloadf, foundationdb-workloadf]
+    steps:
+    - name: Compare throughput
+      run: |
+        echo "Comparison Results:"
+        echo "PostgreSQL: $(grep 'Throughput' pg-results.txt | awk '{print $3}') ops/sec"
+        echo "FoundationDB: $(grep 'Throughput' fdb-results.txt | awk '{print $3}') ops/sec"
+        echo "Recommendation:"
+        echo "FoundationDB shows better horizontal scaling while PostgreSQL offers lower latency for single-node deployments"

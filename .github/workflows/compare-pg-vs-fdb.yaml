@@ -114,7 +114,6 @@ jobs:
       - name: Start and configure FoundationDB
         run: |
           sudo systemctl start foundationdb
-          sudo fdbcli --exec "configure new single memory"
           sleep 5
 
       - name: Copy cluster file to workspace

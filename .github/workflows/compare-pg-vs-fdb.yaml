@@ -111,39 +111,6 @@ jobs:
           sudo dpkg -i foundationdb-clients_7.1.53-1_amd64.deb
           sudo dpkg -i foundationdb-server_7.1.53-1_amd64.deb
 
-      - name: Optimize FoundationDB configuration
-        run: |
-          # Get number of available cores
-          CORES=$(nproc)
-          
-          # Calculate memory allocation (80% of available memory)
-          MEMORY=$(free -b | awk '/Mem:/ {printf "%d", $2 * 0.8}')
-          
-          # Generate optimized configuration
-          sudo tee /etc/foundationdb/foundationdb.conf > /dev/null <<EOL
-          [general]
-          restart_delay = 60
-          initial_reconnect_delay = 1
-          [fdbserver]
-          process_count = $CORES
-          listen_address = public
-          memory = $MEMORY
-          storage_memory = $((MEMORY / 2))
-          metrics_cluster = 
-          [backup_agent]
-          enabled = false
-          [simulation]
-          enabled = false
-          EOL
-
-          # Configure network options
-          sudo sysctl -w net.core.somaxconn=10000
-          sudo sysctl -w net.ipv4.tcp_max_syn_backlog=10000
-
-          # Restart FDB with new configuration
-          sudo systemctl restart foundationdb
-          sleep 5
-
       - name: Copy cluster file to workspace
         run: |
           sudo cp /etc/foundationdb/fdb.cluster .

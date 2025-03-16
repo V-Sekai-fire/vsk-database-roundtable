@@ -132,7 +132,11 @@ jobs:
           cd YCSB
           sed -i '1s/python/python2/' ./bin/ycsb
           ./bin/ycsb load foundationdb -s -P workloads/workloadf \
-            -p foundationdb.clusterfile=../
+            -p foundationdb.clusterfile=../fdb.cluster
+          
+          ./bin/ycsb run foundationdb -s -P workloads/workloadf \
+            -p foundationdb.clusterfile=../fdb.cluster \
+            -p foundationdb.keyprefix=test
 
   compare-results:
     runs-on: ubuntu-22.04

@@ -1,0 +1,92 @@
+name: Create Release with Benchmark Comparison
+
+on:
+  workflow_run:
+    workflows: ["cockroachdb-workloada", "foundationdb-workloada", "postgresql-workloada", "sqlite-workloada"]
+    types:
+      - completed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install matplotlib
+
+      - name: Download CockroachDB results
+        uses: actions/download-artifact@v4
+        with:
+          name: cockroachdb-results
+          path: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download FoundationDB results
+        uses: actions/download-artifact@v4
+        with:
+          name: foundationdb-results
+          path: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download PostgreSQL results
+        uses: actions/download-artifact@v4
+        with:
+          name: postgresql-results
+          path: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download SQLite results
+        uses: actions/download-artifact@v4
+        with:
+          name: sqlite-results
+          path: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Verify downloaded files
+        run: |
+          ls -l
+          echo "CockroachDB Results:"
+          cat cockroachdb_results.txt || echo "cockroachdb_results.txt not found"
+          echo "FoundationDB Results:"
+          cat foundationdb_results.txt || echo "foundationdb_results.txt not found"
+          echo "PostgreSQL Results:"
+          cat postgresql_results.txt || echo "postgresql_results.txt not found"
+          echo "SQLite Results:"
+          cat sqlite_results.txt || echo "sqlite_results.txt not found"
+
+      - name: Generate Report and Plot
+        id: generate_report
+        run: |
+          python .github/scripts/generate_report.py \
+            cockroachdb_results.txt \
+            foundationdb_results.txt \
+            postgresql_results.txt \
+            sqlite_results.txt
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.workflow_run.head_branch }}
+          name: Benchmark Results ${{ github.event.workflow_run.head_branch }}
+          body_path: benchmark_comparison.md
+          files: |
+            latency_comparison_plot.png
+            benchmark_comparison.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

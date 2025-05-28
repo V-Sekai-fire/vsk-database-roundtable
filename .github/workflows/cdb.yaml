@@ -76,7 +76,6 @@ jobs:
             -p jdbc.autocommit=true \
             -p db.batchsize=1000
           
-          # Run workload
           ./bin/ycsb run jdbc -s -P ../workloads/workloada \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
@@ -84,4 +83,10 @@ jobs:
             -p db.passwd="" \
             -p jdbc.fetchsize=10 \
             -p jdbc.autocommit=true \
-            -p db.batchsize=1000
+            -p db.batchsize=1000 > ../cockroachdb_results.txt
+
+      - name: Upload CockroachDB results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cockroachdb-results
+          path: cockroachdb_results.txt

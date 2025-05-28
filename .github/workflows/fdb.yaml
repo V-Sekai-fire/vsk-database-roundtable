@@ -36,19 +36,22 @@ jobs:
           cd YCSB
           sed -i '1s/python/python2/' ./bin/ycsb
           
-          # Load data with high concurrency
           ./bin/ycsb load foundationdb -s -P workloads/workloada \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.concurrency=$(nproc) \
             -threads $(nproc)
           
-          # Run benchmark with maximum throughput settings
           ./bin/ycsb run foundationdb -s -P workloads/workloada \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.keyprefix=test \
             -p foundationdb.concurrency=$(nproc) \
             -p foundationdb.max_retries=100 \
             -p foundationdb.transaction_timeout=60000 \
-            -threads $(nproc)
+            -threads $(nproc) > ../foundationdb_results.txt
 
-  
+      - name: Upload FoundationDB results
+        uses: actions/upload-artifact@v4
+        with:
+          name: foundationdb-results
+          path: foundationdb_results.txt
+

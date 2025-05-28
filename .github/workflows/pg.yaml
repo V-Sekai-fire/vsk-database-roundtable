@@ -90,5 +90,11 @@ jobs:
             -p db.passwd=postgres \
             -p jdbc.fetchsize=10 \
             -p jdbc.autocommit=true \
-            -p db.batchsize=1000
+            -p db.batchsize=1000 > ../postgresql_results.txt
+
+      - name: Upload PostgreSQL results
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgresql-results
+          path: postgresql_results.txt
 

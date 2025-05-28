@@ -61,19 +61,19 @@ jobs:
       - name: Load initial data
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb load jdbc -s -P ../workloads/workloada \\
-            -p db.driver=org.sqlite.JDBC \\
-            -p db.url=jdbc:sqlite:../ycsb.db \\
-            -p jdbc.autocommit=true \\
+          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
+            -p db.driver=org.sqlite.JDBC \
+            -p db.url=jdbc:sqlite:../ycsb.db \
+            -p jdbc.autocommit=true \
             -p db.batchsize=1000
 
       - name: Run Workload A
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb run jdbc -s -P ../workloads/workloada \\
-            -p db.driver=org.sqlite.JDBC \\
-            -p db.url=jdbc:sqlite:../ycsb.db \\
-            -p jdbc.autocommit=true \\
+          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
+            -p db.driver=org.sqlite.JDBC \
+            -p db.url=jdbc:sqlite:../ycsb.db \
+            -p jdbc.autocommit=true \
             -p db.batchsize=1000 > ../sqlite_results.txt
 
       - name: Upload SQLite results

@@ -1,8 +1,8 @@
-name: cockroachdb-workloadf
+name: cockroachdb-workloada
 on:
   push:
 jobs:
-  cockroachdb-workloadf:
+  cockroachdb-workloada:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -49,7 +49,7 @@ jobs:
       - name: Create workload configuration
         run: |
           mkdir -p workloads
-          cat > ./workloads/workloadf <<EOL
+          cat > ./workloads/workloada <<EOL
           workload=site.ycsb.workloads.CoreWorkload
           readallfields=true
           readproportion=0.5
@@ -67,7 +67,7 @@ jobs:
         run: |
           cd ycsb-0.17.0
           # Load data
-          ./bin/ycsb load jdbc -s -P ../workloads/workloadf \
+          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
             -p db.user=root \
@@ -77,7 +77,7 @@ jobs:
             -p db.batchsize=1000
           
           # Run workload
-          ./bin/ycsb run jdbc -s -P ../workloads/workloadf \
+          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
             -p db.user=root \

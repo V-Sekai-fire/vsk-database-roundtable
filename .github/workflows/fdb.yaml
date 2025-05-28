@@ -1,8 +1,8 @@
-name: foundationdb-workloadf
+name: foundationdb-workloada
 on:
   push:
 jobs:
-  foundationdb-workloadf:
+  foundationdb-workloada:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -31,19 +31,19 @@ jobs:
           cd YCSB/foundationdb
           mvn clean package -DskipTests
 
-      - name: Run Workload F with optimized settings
+      - name: Run Workload A with optimized settings
         run: |
           cd YCSB
           sed -i '1s/python/python2/' ./bin/ycsb
           
           # Load data with high concurrency
-          ./bin/ycsb load foundationdb -s -P workloads/workloadf \
+          ./bin/ycsb load foundationdb -s -P workloads/workloada \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.concurrency=$(nproc) \
             -threads $(nproc)
           
           # Run benchmark with maximum throughput settings
-          ./bin/ycsb run foundationdb -s -P workloads/workloadf \
+          ./bin/ycsb run foundationdb -s -P workloads/workloada \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.keyprefix=test \
             -p foundationdb.concurrency=$(nproc) \

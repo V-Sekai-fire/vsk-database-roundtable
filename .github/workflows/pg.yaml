@@ -1,8 +1,8 @@
-name: postgresql-workloadf
+name: postgresql-workloada
 on:
   push:
 jobs:
-  postgresql-workloadf:
+  postgresql-workloada:
     runs-on: ubuntu-22.04
     services:
       postgres:
@@ -41,10 +41,10 @@ jobs:
           sed -i '1s/python/python2/' ycsb-0.17.0/bin/ycsb
           wget -P ycsb-0.17.0/lib/ https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 
-      - name: Create workload configuration
+      - name: Create workload A configuration
         run: |
           mkdir -p workloads
-          cat > ./workloads/workloadf <<EOL
+          cat > ./workloads/workloada <<EOL
           workload=site.ycsb.workloads.CoreWorkload
           readallfields=true
           readproportion=0.5
@@ -71,7 +71,7 @@ jobs:
       - name: Load initial data
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb load jdbc -s -P ../workloads/workloadf \
+          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
             -p db.driver=org.postgresql.Driver \
             -p db.url=jdbc:postgresql://localhost:5432/ycsb \
             -p db.user=postgres \
@@ -80,10 +80,10 @@ jobs:
             -p jdbc.autocommit=true \
             -p db.batchsize=1000
 
-      - name: Run Workload F
+      - name: Run Workload A
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb run jdbc -s -P ../workloads/workloadf \
+          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
             -p db.driver=org.postgresql.Driver \
             -p db.url=jdbc:postgresql://localhost:5432/ycsb \
             -p db.user=postgres \

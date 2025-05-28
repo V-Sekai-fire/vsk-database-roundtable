@@ -29,8 +29,8 @@ jobs:
       - name: Install and Start CockroachDB
         run: |
           # Download and install CockroachDB
-          curl https://binaries.cockroachdb.com/cockroach-v22.1.21.linux-amd64.tgz | tar -xz
-          sudo cp cockroach-v22.1.21.linux-amd64/cockroach /usr/local/bin/
+          curl https://github.com/V-Sekai/cockroach/releases/download/v22.1.64b21683521d9a8735ad/cockroach-v22.1.64b21683521d9a8735ad.linux-amd64.tgz | tar -xz --strip-components=1
+          sudo cp cockroach /usr/local/bin/
           
           # Start CockroachDB in background with automatic shutdown
           (cockroach start-single-node --insecure --http-addr=:8080 --listen-addr=:26257 && trap "cockroach quit --insecure" EXIT) &

@@ -1,8 +1,8 @@
-name: cockroachdb-workloada
+name: cockroachdb-workloadf
 on:
   push:
 jobs:
-  cockroachdb-workloada:
+  cockroachdb-workloadf:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -49,13 +49,14 @@ jobs:
       - name: Create workload configuration
         run: |
           mkdir -p workloads
-          cat > ./workloads/workloada <<EOL
+          cat > ./workloads/workloadf <<EOL
           workload=site.ycsb.workloads.CoreWorkload
           readallfields=true
           readproportion=0.5
-          updateproportion=0.5
+          updateproportion=0
           scanproportion=0
           insertproportion=0
+          readmodifywriteproportion=0.5
           requestdistribution=zipfian
           recordcount=100000
           operationcount=100000
@@ -67,7 +68,7 @@ jobs:
         run: |
           cd ycsb-0.17.0
           # Load data
-          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
+          ./bin/ycsb load jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
             -p db.user=root \
@@ -76,17 +77,17 @@ jobs:
             -p jdbc.autocommit=true \
             -p db.batchsize=1000
           
-          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
+          ./bin/ycsb run jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url="jdbc:postgresql://localhost:26257/ycsb?sslmode=disable" \
             -p db.user=root \
             -p db.passwd="" \
             -p jdbc.fetchsize=10 \
             -p jdbc.autocommit=true \
-            -p db.batchsize=1000 > ../cockroachdb_results.txt
+            -p db.batchsize=1000 > ../cockroachdb_results_workloadf.txt
 
       - name: Upload CockroachDB results
         uses: actions/upload-artifact@v4
         with:
-          name: cockroachdb-results
-          path: cockroachdb_results.txt
+          name: cockroachdb-results-workloadf
+          path: cockroachdb_results_workloadf.txt

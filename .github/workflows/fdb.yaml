@@ -1,8 +1,8 @@
-name: foundationdb-workloada
+name: foundationdb-workloadf
 on:
   push:
 jobs:
-  foundationdb-workloada:
+  foundationdb-workloadf:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -51,27 +51,27 @@ jobs:
           cd YCSB/foundationdb
           mvn clean package -DskipTests
 
-      - name: Run Workload A with optimized settings
+      - name: Run Workload F with optimized settings
         run: |
           cd YCSB
           sed -i '1s/python/python2/' ./bin/ycsb
           
-          ./bin/ycsb load foundationdb -s -P workloads/workloada \
+          ./bin/ycsb load foundationdb -s -P workloads/workloadf \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.concurrency=$(nproc) \
             -threads $(nproc)
           
-          ./bin/ycsb run foundationdb -s -P workloads/workloada \
+          ./bin/ycsb run foundationdb -s -P workloads/workloadf \
             -p foundationdb.clusterfile=../fdb.cluster \
             -p foundationdb.keyprefix=test \
             -p foundationdb.concurrency=$(nproc) \
             -p foundationdb.max_retries=100 \
             -p foundationdb.transaction_timeout=60000 \
-            -threads $(nproc) > ../foundationdb_results.txt
+            -threads $(nproc) > ../foundationdb_results_workloadf.txt
 
       - name: Upload FoundationDB results
         uses: actions/upload-artifact@v4
         with:
-          name: foundationdb-results
-          path: foundationdb_results.txt
+          name: foundationdb-results-workloadf
+          path: foundationdb_results_workloadf.txt
 

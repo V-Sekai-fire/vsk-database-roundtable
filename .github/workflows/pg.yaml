@@ -1,8 +1,8 @@
-name: postgresql-workloada
+name: postgresql-workloadf
 on:
   push:
 jobs:
-  postgresql-workloada:
+  postgresql-workloadf:
     runs-on: ubuntu-22.04
     services:
       postgres:
@@ -41,16 +41,17 @@ jobs:
           sed -i '1s/python/python2/' ycsb-0.17.0/bin/ycsb
           wget -P ycsb-0.17.0/lib/ https://jdbc.postgresql.org/download/postgresql-42.6.0.jar
 
-      - name: Create workload A configuration
+      - name: Create workload F configuration
         run: |
           mkdir -p workloads
-          cat > ./workloads/workloada <<EOL
+          cat > ./workloads/workloadf <<EOL
           workload=site.ycsb.workloads.CoreWorkload
           readallfields=true
           readproportion=0.5
-          updateproportion=0.5
+          updateproportion=0
           scanproportion=0
           insertproportion=0
+          readmodifywriteproportion=0.5
           requestdistribution=zipfian
           recordcount=100000
           operationcount=100000
@@ -71,7 +72,7 @@ jobs:
       - name: Load initial data
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
+          ./bin/ycsb load jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url=jdbc:postgresql://localhost:5432/ycsb \
             -p db.user=postgres \
@@ -80,21 +81,21 @@ jobs:
             -p jdbc.autocommit=true \
             -p db.batchsize=1000
 
-      - name: Run Workload A
+      - name: Run Workload F
         run: |
           cd ycsb-0.17.0
-          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
+          ./bin/ycsb run jdbc -s -P ../workloads/workloadf \
             -p db.driver=org.postgresql.Driver \
             -p db.url=jdbc:postgresql://localhost:5432/ycsb \
             -p db.user=postgres \
             -p db.passwd=postgres \
             -p jdbc.fetchsize=10 \
             -p jdbc.autocommit=true \
-            -p db.batchsize=1000 > ../postgresql_results.txt
+            -p db.batchsize=1000 > ../postgresql_results_workloadf.txt
 
       - name: Upload PostgreSQL results
         uses: actions/upload-artifact@v4
         with:
-          name: postgresql-results
-          path: postgresql_results.txt
+          name: postgresql-results-workloadf
+          path: postgresql_results_workloadf.txt
 

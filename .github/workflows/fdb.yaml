@@ -25,12 +25,10 @@ jobs:
         run: |
           CORES=$(nproc)
           echo "Number of cores detected: $CORES"
-          echo "Configuring FoundationDB to use $CORES server processes."
-          # This sed command finds a line starting with optional '#' and spaces,
-          # then 'processes', then optional spaces around '=', and any value.
-          # It replaces that entire line with 'processes = $CORES'.
-          # This handles cases where the line is commented out or already active.
-          sudo sed -i -E "s/^[# ]*processes[ ]*=[ ]*.*/processes = $CORES/" /etc/foundationdb/foundationdb.conf
+          echo "Configuring FoundationDB to use 1 storage process (FDB handles multi-core internally)."
+          # Set processes to 1 for optimal single-machine storage utilization.
+          # FDB storage is multi-threaded and will use all available cores.
+          sudo sed -i -E "s/^[# ]*processes[ ]*=[ ]*.*/processes = 1/" /etc/foundationdb/foundationdb.conf
           
           echo "Verifying FoundationDB configuration (grep for 'processes' in /etc/foundationdb/foundationdb.conf):"
           sudo grep "processes" /etc/foundationdb/foundationdb.conf || echo "'processes' line not found or not updated in /etc/foundationdb/foundationdb.conf"

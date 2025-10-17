@@ -1,0 +1,78 @@
+name: duckdb-workloada
+on:
+  push:
+jobs:
+  duckdb-workloada:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Install Python 2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python2
+
+      - name: Install DuckDB CLI
+        run: |
+          curl -s https://install.duckdb.org | sh
+          sudo mv /home/runner/.duckdb/cli/latest/duckdb /usr/local/bin/
+
+      - name: Download YCSB and DuckDB JDBC driver
+        run: |
+          wget https://github.com/brianfrankcooper/YCSB/releases/download/0.17.0/ycsb-0.17.0.tar.gz
+          tar xfvz ycsb-0.17.0.tar.gz
+          sed -i '1s/python/python2/' ycsb-0.17.0/bin/ycsb
+          # Download DuckDB JDBC driver (e.g., version 0.10.0 - check for latest)
+          wget -P ycsb-0.17.0/lib/ https://repo1.maven.org/maven2/org/duckdb/duckdb_jdbc/0.10.0/duckdb_jdbc-0.10.0.jar
+
+      - name: Create workload A configuration
+        run: |
+          mkdir -p workloads
+          cat > ./workloads/workloada <<EOL
+          workload=site.ycsb.workloads.CoreWorkload
+          readallfields=true
+          readproportion=0.5
+          updateproportion=0.5
+          scanproportion=0
+          insertproportion=0
+          requestdistribution=zipfian
+          recordcount=100000
+          operationcount=100000
+          fieldcount=3
+          fieldlength=100
+          EOL
+
+      - name: Create database and table (DuckDB creates DB on connection if not exists)
+        run: |
+          duckdb ycsb.duckdb "CREATE TABLE IF NOT EXISTS usertable (ycsb_key VARCHAR(255) PRIMARY KEY, field0 VARCHAR, field1 VARCHAR, field2 VARCHAR);"
+
+      - name: Load initial data
+        run: |
+          cd ycsb-0.17.0
+          ./bin/ycsb load jdbc -s -P ../workloads/workloada \
+            -p db.driver=org.duckdb.DuckDBDriver \
+            -p db.url=jdbc:duckdb:../ycsb.duckdb \
+            -p jdbc.autocommit=true \
+            -p db.batchsize=1000
+
+      - name: Run Workload A
+        run: |
+          cd ycsb-0.17.0
+          ./bin/ycsb run jdbc -s -P ../workloads/workloada \
+            -p db.driver=org.duckdb.DuckDBDriver \
+            -p db.url=jdbc:duckdb:../ycsb.duckdb \
+            -p jdbc.autocommit=true \
+            -p db.batchsize=1000 > ../duckdb_results.txt
+
+      - name: Upload DuckDB results
+        uses: actions/upload-artifact@v4
+        with:
+          name: duckdb-results
+          path: duckdb_results.txt

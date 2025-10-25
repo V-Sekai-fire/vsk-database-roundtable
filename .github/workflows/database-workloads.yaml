@@ -98,7 +98,7 @@ jobs:
         if: matrix.database == 'pg'
         uses: tj-actions/install-postgresql@v3
         with:
-          postgresql-version: 18
+          postgresql-version: 17
       - name: Configure PostgreSQL for YCSB
         if: matrix.database == 'pg'
         run: |

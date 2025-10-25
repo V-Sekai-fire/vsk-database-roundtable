@@ -18,10 +18,10 @@ jobs:
       - name: Install FoundationDB server and client
         run: |
           sudo apt-get update
-          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-server_7.1.53-1_amd64.deb
-          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-clients_7.1.53-1_amd64.deb
-          sudo dpkg -i foundationdb-clients_7.1.53-1_amd64.deb
-          sudo dpkg -i foundationdb-server_7.1.53-1_amd64.deb
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.3.63/foundationdb-server_7.3.63-1_amd64.deb
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.3.63/foundationdb-clients_7.3.63-1_amd64.deb
+          sudo dpkg -i foundationdb-clients_7.3.63-1_amd64.deb
+          sudo dpkg -i foundationdb-server_7.3.63-1_amd64.deb
 
       - name: Configure FoundationDB for multi-core
         run: |
@@ -54,7 +54,7 @@ jobs:
       - name: Run Workload F with optimized settings
         run: |
           cd YCSB
-          sed -i '1s/python/python2/' ./bin/ycsb
+          sed -i '1s/python/python3/' ./bin/ycsb
           
           ./bin/ycsb load foundationdb -s -P workloads/workloadf \
             -p foundationdb.clusterfile=../fdb.cluster \

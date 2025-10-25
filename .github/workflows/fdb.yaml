@@ -23,17 +23,27 @@ jobs:
           sudo dpkg -i foundationdb-clients_7.3.63-1_amd64.deb
           sudo dpkg -i foundationdb-server_7.3.63-1_amd64.deb
 
-      - name: Configure FoundationDB for multi-core
+      - name: Configure FoundationDB for performance
         run: |
           CORES=$(nproc)
           echo "Number of cores detected: $CORES"
-          echo "Configuring FoundationDB to use 1 storage process (FDB handles multi-core internally)."
-          # Set processes to 1 for optimal single-machine storage utilization.
-          # FDB storage is multi-threaded and will use all available cores.
-          sudo sed -i -E "s/^[# ]*processes[ ]*=[ ]*.*/processes = 1/" /etc/foundationdb/foundationdb.conf
+          echo "Configuring FoundationDB for performance with $CORES processes, ssd-2 storage, and 8GB memory."
           
-          echo "Verifying FoundationDB configuration (grep for 'processes' in /etc/foundationdb/foundationdb.conf):"
+          # Update 'processes' setting
+          sudo sed -i -E "s/^[# ]*processes[ ]*=[ ]*.*/processes = $CORES/" /etc/foundationdb/foundationdb.conf
+          
+          # Add or update 'storage_engine' setting
+          grep -q "^storage_engine =" /etc/foundationdb/foundationdb.conf || echo "storage_engine = memory" | sudo tee -a /etc/foundationdb/foundationdb.conf # Add a default if not present
+          sudo sed -i -E "s/^[# ]*storage_engine[ ]*=[ ]*.*/storage_engine = ssd-2/" /etc/foundationdb/foundationdb.conf
+
+          # Add or update 'storage_memory' setting
+          grep -q "^storage_memory =" /etc/foundationdb/foundationdb.conf || echo "storage_memory = 1GB" | sudo tee -a /etc/foundationdb/foundationdb.conf # Add a default if not present
+          sudo sed -i -E "s/^[# ]*storage_memory[ ]*=[ ]*.*/storage_memory = 8GB/" /etc/foundationdb/foundationdb.conf
+          
+          echo "Verifying FoundationDB configuration (grep for 'processes', 'storage_engine', 'storage_memory' in /etc/foundationdb/foundationdb.conf):"
           sudo grep "processes" /etc/foundationdb/foundationdb.conf || echo "'processes' line not found or not updated in /etc/foundationdb/foundationdb.conf"
+          sudo grep "storage_engine" /etc/foundationdb/foundationdb.conf || echo "'storage_engine' line not found or not updated in /etc/foundationdb/foundationdb.conf"
+          sudo grep "storage_memory" /etc/foundationdb/foundationdb.conf || echo "'storage_memory' line not found or not updated in /etc/foundationdb/foundationdb.conf"
 
           echo "Restarting FoundationDB service..."
           sudo systemctl restart foundationdb

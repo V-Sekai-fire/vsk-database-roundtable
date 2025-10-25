@@ -94,10 +94,12 @@ jobs:
 
       - name: Setup PostgreSQL
         if: matrix.database == 'pg'
+        uses: tj-actions/install-postgresql@v3
+        with:
+          postgresql-version: 18
+      - name: Configure PostgreSQL for YCSB
+        if: matrix.database == 'pg'
         run: |
-          sudo apt-get install -y postgresql postgresql-contrib
-          sudo systemctl start postgresql
-          sleep 5
           sudo -u postgres createuser -d ycsb
           sudo -u postgres createdb ycsb
           sudo -u postgres psql -c "ALTER USER ycsb PASSWORD 'password';"

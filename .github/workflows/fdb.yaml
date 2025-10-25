@@ -1,0 +1,76 @@
+name: foundationdb-workloadf
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  foundationdb-workloadf:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python 2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python2
+
+      - name: Install FoundationDB server and client
+        run: |
+          sudo apt-get update
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-server_7.1.53-1_amd64.deb
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.1.53/foundationdb-clients_7.1.53-1_amd64.deb
+          sudo dpkg -i foundationdb-clients_7.1.53-1_amd64.deb
+          sudo dpkg -i foundationdb-server_7.1.53-1_amd64.deb
+
+      - name: Configure FoundationDB for multi-core
+        run: |
+          CORES=$(nproc)
+          echo "Number of cores detected: $CORES"
+          echo "Configuring FoundationDB to use 1 storage process (FDB handles multi-core internally)."
+          # Set processes to 1 for optimal single-machine storage utilization.
+          # FDB storage is multi-threaded and will use all available cores.
+          sudo sed -i -E "s/^[# ]*processes[ ]*=[ ]*.*/processes = 1/" /etc/foundationdb/foundationdb.conf
+          
+          echo "Verifying FoundationDB configuration (grep for 'processes' in /etc/foundationdb/foundationdb.conf):"
+          sudo grep "processes" /etc/foundationdb/foundationdb.conf || echo "'processes' line not found or not updated in /etc/foundationdb/foundationdb.conf"
+
+          echo "Restarting FoundationDB service..."
+          sudo systemctl restart foundationdb
+          
+          echo "Waiting 10 seconds for FoundationDB to stabilize after restart..."
+          sleep 10
+
+      - name: Copy cluster file to workspace
+        run: |
+          sudo cp /etc/foundationdb/fdb.cluster .
+
+      - name: Build YCSB FDB binding
+        run: |
+          git clone --branch 0.17.0 --depth 1 https://github.com/brianfrankcooper/YCSB.git
+          cd YCSB/foundationdb
+          mvn clean package -DskipTests
+
+      - name: Run Workload F with optimized settings
+        run: |
+          cd YCSB
+          sed -i '1s/python/python2/' ./bin/ycsb
+          
+          ./bin/ycsb load foundationdb -s -P workloads/workloadf \
+            -p foundationdb.clusterfile=../fdb.cluster \
+            -p foundationdb.concurrency=$(nproc) \
+            -threads $(nproc)
+          
+          ./bin/ycsb run foundationdb -s -P workloads/workloadf \
+            -p foundationdb.clusterfile=../fdb.cluster \
+            -p foundationdb.keyprefix=test \
+            -p foundationdb.concurrency=$(nproc) \
+            -p foundationdb.max_retries=100 \
+            -p foundationdb.transaction_timeout=60000 \
+            -threads $(nproc) > ../foundationdb_results_workloadf.txt
+
+      - name: Upload FoundationDB results
+        uses: actions/upload-artifact@v4
+        with:
+          name: foundationdb-results-workloadf
+          path: foundationdb_results_workloadf.txt

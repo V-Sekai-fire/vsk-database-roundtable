@@ -8,10 +8,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Python 2
+      - name: Install Python 3
         run: |
           sudo apt-get update
-          sudo apt-get install -y python2
+          sudo apt-get install -y python3
 
       - name: Install FoundationDB server and client
         run: |

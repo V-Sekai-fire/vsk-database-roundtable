@@ -1,8 +1,6 @@
 name: foundationdb-workloadf
 on:
   push:
-    tags:
-      - '*'
 jobs:
   foundationdb-workloadf:
     runs-on: ubuntu-22.04
